@@ -1,13 +1,13 @@
-/clj/.cpcache
-/clj/.nrepl-port
-/clj/target/
+.cpcache
+.nrepl-port
+target
 
 session.txt
 
-/rust/target
-/rust/**/*.rs.bk
+/2018/rust/target
+/2018/rust/**/*.rs.bk
 compile_commands.json
 
 *iml
 
-rust/data/*
+/2018/rust/data/*
