@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#define DEBUG 1
+#define DEBUG 0
 
 string pad(string input, char padchar, size_t wanted_size) {
   if (input.size() >= wanted_size)
@@ -19,16 +19,25 @@ string pad(string input, char padchar, size_t wanted_size) {
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 enum class InputMode { UNKNOWN, POSITION, IMMEDIATE };
+std::ostream &operator<<(std::ostream &os, const InputMode &c) {
+  if (c == InputMode::IMMEDIATE) {
+    os << "IMMEDIATE";
+  } else if (c == InputMode::POSITION) {
+    os << "POSITION";
+  } else {
+    os << "UNKNOWN";
+  }
+  return os;
+}
 
 InputMode read_input_mode(char digit) {
-  switch (digit) {
-  case '0':
+  if (digit == '0') {
     return InputMode::POSITION;
-  case '1':
-    return InputMode::IMMEDIATE;
-  default:
-    return InputMode::UNKNOWN;
   }
+  if (digit == '1') {
+    return InputMode::IMMEDIATE;
+  }
+  return InputMode::UNKNOWN;
 }
 
 enum class Op { ADD, MULTIPLY, INPUT, OUTPUT, EXIT };
@@ -38,15 +47,15 @@ enum Action { STOP, CONTINUE };
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 struct Instruction {
-  virtual Action run(Input &input, uint offset, Input &inqueue) = 0;
+  virtual Action run(Input &input, uint &offset, Input &inqueue,
+                     Input &outqueue) = 0;
   virtual ~Instruction() {}
-  virtual uint step() { return 0; }
 };
 
 struct ExitInstruction : Instruction {
   static constexpr const char *code = "99";
 
-  Action run(Input &input, uint offset, Input &inqueue) {
+  Action run(Input &input, uint &offset, Input &inqueue, Input &outqueue) {
 #if DEBUG
     cout << "reached exit at " << offset << endl;
 #endif
@@ -65,9 +74,8 @@ struct AddInstruction : Instruction {
                  InputMode mode_second = InputMode::UNKNOWN)
       : mode_first{mode_first}, mode_second{mode_second} {};
 
-  virtual uint step() override { return 4; }
-
-  Action run(Input &input, uint offset, Input &inqueue) override {
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
     auto a = input[offset + 1];
     auto b = input[offset + 2];
     auto c = input[offset + 3];
@@ -83,6 +91,8 @@ struct AddInstruction : Instruction {
     cout << val1 << " (" << a << ") " << op() << " " << val2 << " (" << b
          << ") = " << val << " (" << c << ")" << endl;
 #endif
+
+    offset += 4;
     return Action::CONTINUE;
   };
 
@@ -100,9 +110,14 @@ struct MultiplyInstruction : AddInstruction {
 
 struct InputInstruction : Instruction {
   static constexpr const char *code = "03";
-  virtual uint step() override { return 2; }
-  Action run(Input &input, uint offset, Input &inqueue) override {
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
     auto a = input[offset + 1];
+    if (inqueue.size() == 0) {
+      ostringstream msg;
+      msg << "reading input at " << offset << " but input queue is empty!";
+      throw runtime_error{msg.str()};
+    }
     auto val = inqueue.back();
     inqueue.pop_back();
     input[a] = val;
@@ -110,6 +125,7 @@ struct InputInstruction : Instruction {
     cout << "at " << offset << " reading input " << val << " into position "
          << a << endl;
 #endif
+    offset += 2;
     return Action::CONTINUE;
   }
 };
@@ -118,19 +134,123 @@ struct OutputInstruction : Instruction {
   static constexpr const char *code = "04";
   InputMode inputMode;
   OutputInstruction(InputMode inputMode) : inputMode{inputMode} {}
-  virtual uint step() override { return 2; }
-  Action run(Input &input, uint offset, Input &inqueue) override {
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
     auto ptr = input[offset + 1];
     auto val = InputMode::IMMEDIATE == inputMode ? ptr : input[ptr];
+    outqueue.push_back(val);
 #if DEBUG
     cout << "at " << offset << " output: " << val << endl;
-    print_input(input);
 #endif
+    offset += 2;
     return Action::CONTINUE;
   }
 };
 
-unique_ptr<Instruction> read_instruction(Input &input, uint offset) {
+struct JumpIfTrueInstruction : Instruction {
+  static constexpr const char *code = "05";
+  InputMode mode_first;
+  InputMode mode_second;
+  JumpIfTrueInstruction(InputMode mode_first, InputMode mode_second)
+      : mode_first{mode_first}, mode_second{mode_second} {}
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
+    auto a = input[offset + 1];
+    auto b = input[offset + 2];
+    auto val = InputMode::IMMEDIATE == mode_first ? a : input[a];
+    auto new_offset = InputMode::IMMEDIATE == mode_second ? b : input[b];
+#if DEBUG
+    cout << "at " << offset << " jump if true: " << val
+         << " new offset: " << new_offset << endl;
+#endif
+    if (val != 0) {
+      offset = new_offset;
+    } else {
+      offset += 3;
+    }
+    return Action::CONTINUE;
+  }
+};
+
+struct JumpIfFalseInstruction : JumpIfTrueInstruction {
+  static constexpr const char *code = "06";
+  JumpIfFalseInstruction(InputMode mode_first, InputMode mode_second)
+      : JumpIfTrueInstruction(mode_first, mode_second) {}
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
+    auto a = input[offset + 1];
+    auto b = input[offset + 2];
+    auto val = InputMode::IMMEDIATE == mode_first ? a : input[a];
+    auto new_offset = InputMode::IMMEDIATE == mode_second ? b : input[b];
+#if DEBUG
+    cout << "at " << offset << " jump if false: " << val
+         << " new offset: " << new_offset << endl;
+#endif
+    if (val == 0) {
+      offset = new_offset;
+    } else {
+      offset += 3;
+    }
+    return Action::CONTINUE;
+  }
+};
+
+struct LessThanInstruction : Instruction {
+  static constexpr const char *code = "07";
+  InputMode mode_first;
+  InputMode mode_second;
+  InputMode mode_third;
+  LessThanInstruction(InputMode mode_first, InputMode mode_second,
+                      InputMode mode_third)
+      : mode_first{mode_first}, mode_second{mode_second}, mode_third{
+                                                              mode_third} {}
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
+    auto a = input[offset + 1];
+    auto b = input[offset + 2];
+    auto c = input[offset + 3];
+    auto val1 = InputMode::IMMEDIATE == mode_first ? a : input[a];
+    auto val2 = InputMode::IMMEDIATE == mode_second ? b : input[b];
+    /* auto pos = InputMode::IMMEDIATE == mode_third ? c : input[c]; */
+    auto pos = c;
+    input[pos] = val1 < val2 ? 1 : 0;
+#if DEBUG
+    cout << "at " << offset << " " << val1 << "<" << val2 << " putting "
+         << input[pos] << " at " << pos << " (" << c << ")" << endl;
+#endif
+    offset += 4;
+
+    return Action::CONTINUE;
+  }
+};
+
+struct EqualsInstruction : LessThanInstruction {
+  static constexpr const char *code = "08";
+  EqualsInstruction(InputMode mode_first, InputMode mode_second,
+                    InputMode mode_third)
+      : LessThanInstruction(mode_first, mode_second, mode_third) {}
+  Action run(Input &input, uint &offset, Input &inqueue,
+             Input &outqueue) override {
+    auto a = input[offset + 1];
+    auto b = input[offset + 2];
+    auto c = input[offset + 3];
+    auto val1 = InputMode::IMMEDIATE == mode_first ? a : input[a];
+    auto val2 = InputMode::IMMEDIATE == mode_second ? b : input[b];
+    /* auto pos = InputMode::IMMEDIATE == mode_third ? c : input[c]; */
+    auto pos = c;
+    input[pos] = val1 == val2 ? 1 : 0;
+#if DEBUG
+    cout << "at " << offset << " " << val1 << "==" << val2 << " putting "
+         << input[pos] << " at " << pos << " (" << c << ")" << endl;
+#endif
+    offset += 4;
+
+    return Action::CONTINUE;
+  }
+};
+
+unique_ptr<Instruction> read_instruction(const Input &input,
+                                         const uint offset) {
   auto digits = to_string(input[offset]);
   auto digits_padded = pad(pad(digits, '0', 2), '_', 5);
   auto code = digits_padded.substr(digits_padded.size() - 2, 2);
@@ -154,52 +274,71 @@ unique_ptr<Instruction> read_instruction(Input &input, uint offset) {
   if (code == MultiplyInstruction::code) {
     return make_unique<MultiplyInstruction>(MultiplyInstruction{first, second});
   }
-  cout << offset << endl;
-  cout << digits << endl;
-  cout << code << endl;
 
-  throw runtime_error{"read_instruction: should not get here"};
+  if (code == JumpIfTrueInstruction::code) {
+    return make_unique<JumpIfTrueInstruction>(
+        JumpIfTrueInstruction{first, second});
+  }
+
+  if (code == JumpIfFalseInstruction::code) {
+    return make_unique<JumpIfFalseInstruction>(
+        JumpIfFalseInstruction{first, second});
+  }
+
+  if (code == LessThanInstruction::code) {
+    return make_unique<LessThanInstruction>(
+        LessThanInstruction{first, second, third});
+  }
+
+  if (code == EqualsInstruction::code) {
+    return make_unique<EqualsInstruction>(
+        EqualsInstruction{first, second, third});
+  }
+
+  ostringstream msg;
+  msg << "read_instruction: should not get here. code: " << code;
+  throw runtime_error{msg.str()};
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 typedef tuple<long, long> Solution;
 
-void solve_with_again(long noun, long verb, Input &input, Input &inqueue) {
+void solve_day2_again(long noun, long verb, Input &input) {
   input[1] = noun;
   input[2] = verb;
 
-  auto offset = 0;
+  Input outq{};
+  Input inq{};
+  uint offset = 0;
   while (true) {
     // cout << "at " << offset << endl;
     auto instruction = read_instruction(input, offset);
     // cout << "instruction: " << typeid(*instruction).name() << endl;
-    auto action = instruction->run(input, offset, inqueue);
+    auto action = instruction->run(input, offset, inq, outq);
     if (action == Action::STOP)
       return;
     /* cout << typeid(*instruction).name() << " " << instruction->step << endl;
      */
-    offset += instruction->step();
   }
 }
 
-Solution solve1_again() {
+Solution solve_day2_again_1() {
   auto input = get_input("input_02.txt");
-  Input inqueue{};
   auto start = chrono::high_resolution_clock::now();
-  solve_with_again(12, 2, input, inqueue);
+  solve_day2_again(12, 2, input);
   auto stop = chrono::high_resolution_clock::now();
   return make_tuple((stop - start).count(), input[0]);
 }
 
-Solution solve2_again() {
+Solution solve_day2_again_2() {
   auto input_proto = get_input("input_02.txt");
-  Input inqueue{};
+
   auto start = chrono::high_resolution_clock::now();
   for (auto i = 0; i < 99; ++i) {
     for (auto j = 0; j < 99; ++j) {
       auto input = input_proto;
-      solve_with_again(i, j, input, inqueue);
+      solve_day2_again(i, j, input);
       if (input[0] == 19690720) {
         auto solution = 100 * i + j;
         auto stop = chrono::high_resolution_clock::now();
@@ -213,48 +352,92 @@ Solution solve2_again() {
   exit(1);
 }
 
-void solve(Input &input, Input &inqueue) {
-  auto offset = 0;
+long solve(Input input, Input &inqueue, Input &outqueue) {
+  uint offset = 0;
   while (true) {
-    // cout << "at " << offset << endl;
     auto instruction = read_instruction(input, offset);
-    // cout << "instruction: " << typeid(*instruction).name() << endl;
-    auto action = instruction->run(input, offset, inqueue);
+    auto action = instruction->run(input, offset, inqueue, outqueue);
     if (action == Action::STOP)
-      return;
-    /* cout << typeid(*instruction).name() << " " << instruction->step << endl;
-     */
-    offset += instruction->step();
+      break;
   }
+  return outqueue.size() > 0 ? outqueue.back() : -666;
 }
+
+long solve(Input input, long queue_val) {
+  Input inqueue{queue_val};
+  Input outqueue{};
+  return solve(input, inqueue, outqueue);
+}
+
+Solution solve_1() {
+  auto input = get_input("input_05.txt");
+  auto start = chrono::high_resolution_clock::now();
+  auto result = solve(input, 1);
+  auto stop = chrono::high_resolution_clock::now();
+  auto duration =
+      chrono::duration_cast<chrono::microseconds>(stop - start).count();
+  return make_tuple(duration, result);
+}
+
+Solution solve_2() {
+  auto input = get_input("input_05.txt");
+  auto start = chrono::high_resolution_clock::now();
+  auto result = solve(input, 5);
+  auto stop = chrono::high_resolution_clock::now();
+  auto duration =
+      chrono::duration_cast<chrono::microseconds>(stop - start).count();
+  return make_tuple(duration, result);
+}
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+void tests() {
+  if (solve({3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8}, 8) != 1)
+    cerr << "TEST FAIL: 1) equal to 8 test failed" << endl;
+
+  if (solve({3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8}, 7) != 0)
+    cerr << "TEST FAIL: 2) equal to 8 test failed" << endl;
+
+  if (solve({3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8}, 3) != 1)
+    cerr << "TEST FAIL: 3)" << endl;
+
+  if (solve({3, 3, 1107, -1, 8, 3, 4, 3, 99}, 8) != 0)
+    cerr << "TEST FAIL: 4)" << endl;
+
+  if (solve({3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9}, 2) != 1)
+    cerr << "TEST FAIL: 5)" << endl;
+
+  if (solve({3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1}, 0) != 0)
+    cerr << "TEST FAIL: 6)" << endl;
+
+  // -------------------------------
+
+  Input input{3,    21,   1008, 21, 8,    20, 1005, 20,  22,  107,  8,    21,
+              20,   1006, 20,   31, 1106, 0,  36,   98,  0,   0,    1002, 21,
+              125,  20,   4,    20, 1105, 1,  46,   104, 999, 1105, 1,    46,
+              1101, 1000, 1,    20, 4,    20, 1105, 1,   46,  98,   99};
+
+  if (solve(input, 0) != 999)
+    cerr << "TEST FAIL: 7)" << endl;
+  if (solve(input, 8) != 1000)
+    cerr << "TEST FAIL: 8)" << endl;
+  if (solve(input, 9) != 1001)
+    cerr << "TEST FAIL: 9)" << endl;
+}
 
 int main(int argc, char *argv[]) {
 
-  /* { */
-  /*   auto [duration, solution] = solve1_again(); */
-  /*   cout << "result: " << solution << " in " << duration << "ns" << endl; */
-  /* } */
-  /* { */
-  /*   auto [duration, solution] = solve2_again(); */
-  /*   cout << "result: " << solution << " in " << duration << "µs" << endl; */
-  /* } */
+  // tests();
+
   {
-    Input input{1002, 4, 3, 4, 33};
-    Input inqueue{1};
-    solve(input, inqueue);
+    auto [duration, solution] = solve_1();
+    cout << "result: " << solution << " in " << duration << "µs" << endl;
   }
 
   {
-    auto input = get_input("input_05.txt");
-    cout << input[225] << endl;
-    print_input(input);
-    Input inqueue{1};
-    auto start = chrono::high_resolution_clock::now();
-    solve(input, inqueue);
-    auto stop = chrono::high_resolution_clock::now();
-    print_input(input);
-    /* return make_tuple((stop - start).count(), input[0]); */
+    auto [duration, solution] = solve_2();
+    cout << "result: " << solution << " in " << duration << "µs" << endl;
   }
+
   return 0;
 }
