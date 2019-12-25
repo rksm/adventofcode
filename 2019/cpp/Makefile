@@ -1,4 +1,4 @@
-.PHONY: run clean fresh
+.PHONY: run clean fresh rtags
 
 SOURCE_FILES := $(wildcard *.cpp) $(wildcard *.hpp)
 CPP := clang
@@ -22,8 +22,17 @@ run: day_05
 debug: day_05
 	gdb ./day_05
 
+profile: day_05
+	@-rm callgrind.out*
+	valgrind --tool=callgrind ./day_05
+	kcachegrind ./callgrind.out.*
+
 clean:
-	find . -type f -exec file {} \; | grep executable | cut -d':' -f1 | xargs rm
+	@-bash -c 'find . -type f -exec file {} \; | grep executable | cut -d':' -f1 | xargs rm'
+
+rtags: clean
+	bear $(MAKE) run
+	rc -J .
 
 fresh: clean
 	touch *.cpp

@@ -11,7 +11,7 @@ using namespace std;
 
 typedef vector<long> Input;
 
-Input get_input() {
+Input get_input_day_02() {
   Input input;
   {
     ifstream input_file;
@@ -99,7 +99,7 @@ void solve_with(long noun, long verb, Input &input) {
 typedef tuple<long, long> Solution;
 
 Solution solve1() {
-  auto input = get_input();
+  auto input = get_input_day_02();
   auto start = chrono::high_resolution_clock::now();
   solve_with(12, 2, input);
   auto stop = chrono::high_resolution_clock::now();
@@ -107,7 +107,7 @@ Solution solve1() {
 }
 
 Solution solve2() {
-  auto input_proto = get_input();
+  auto input_proto = get_input_day_02();
   auto start = chrono::high_resolution_clock::now();
   for (auto i = 0; i < 99; ++i) {
     for (auto j = 0; j < 99; ++j) {
