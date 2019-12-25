@@ -239,50 +239,29 @@ struct EqualsInstruction : LessThanInstruction {
   }
 };
 
-InstructionMap Instruction::instructions() {
+#define add_instruction(map, INSTRUCTION_CLASS)                                \
+  {                                                                            \
+    auto code = INSTRUCTION_CLASS::code;                                       \
+    map[code] = make_shared<INSTRUCTION_CLASS>(INSTRUCTION_CLASS{});           \
+  }
+
+InstructionMap Instruction::make_instruction_map() {
   InstructionMap map;
-  {
-    auto code = ExitInstruction::code;
-    map[code] = make_shared<ExitInstruction>(ExitInstruction{});
-  }
-  {
-    auto code = InputInstruction::code;
-    map[code] = make_shared<InputInstruction>(InputInstruction{});
-  }
-  {
-    auto code = OutputInstruction::code;
-    map[code] = make_shared<OutputInstruction>(OutputInstruction{});
-  }
-  {
-    auto code = AddInstruction::code;
-    map[code] = make_shared<AddInstruction>(AddInstruction{});
-  }
-  {
-    auto code = MultiplyInstruction::code;
-    map[code] = make_shared<MultiplyInstruction>(MultiplyInstruction{});
-  }
-  {
-    auto code = JumpIfTrueInstruction::code;
-    map[code] = make_shared<JumpIfTrueInstruction>(JumpIfTrueInstruction{});
-  }
-  {
-    auto code = JumpIfFalseInstruction::code;
-    map[code] = make_shared<JumpIfFalseInstruction>(JumpIfFalseInstruction{});
-  }
-  {
-    auto code = LessThanInstruction::code;
-    map[code] = make_shared<LessThanInstruction>(LessThanInstruction{});
-  }
-  {
-    auto code = EqualsInstruction::code;
-    map[code] = make_shared<EqualsInstruction>(EqualsInstruction{});
-  }
+  add_instruction(map, ExitInstruction);
+  add_instruction(map, InputInstruction);
+  add_instruction(map, OutputInstruction);
+  add_instruction(map, AddInstruction);
+  add_instruction(map, MultiplyInstruction);
+  add_instruction(map, JumpIfTrueInstruction);
+  add_instruction(map, JumpIfFalseInstruction);
+  add_instruction(map, LessThanInstruction);
+  add_instruction(map, EqualsInstruction);
   return map;
 }
 
-shared_ptr<Instruction>
-Instruction::read(const InstructionMap available_instructions,
-                  const RawInstructions &instructions, const uint offset) {
+InstructionHandle Instruction::read(const InstructionMap available_instructions,
+                                    const RawInstructions &instructions,
+                                    const uint offset) {
   auto digits = Digits(instructions.ints[offset]);
   auto code = digits[1] * 10 + digits[0];
   auto i = available_instructions.at(code);
@@ -298,7 +277,7 @@ void IntComputer::run() {
   offset = 0;
   while (true) {
     auto instruction =
-        Instruction::read(available_instructions, instructions, offset);
+        Instruction::read(known_instructions, instructions, offset);
     auto action = instruction->run(instructions, offset, input, output);
     if (action == Action::STOP)
       break;

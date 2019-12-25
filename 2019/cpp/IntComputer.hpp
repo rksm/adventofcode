@@ -29,14 +29,17 @@ enum Action { STOP, CONTINUE };
 enum class InputMode { UNKNOWN, POSITION, IMMEDIATE };
 
 struct Instruction;
-typedef std::map<uint, std::shared_ptr<Instruction>> InstructionMap;
+typedef std::shared_ptr<Instruction> InstructionHandle;
+typedef std::map<uint, InstructionHandle> InstructionMap;
 
 struct Instruction {
+  static InstructionMap make_instruction_map();
+  static InstructionHandle
+  read(const InstructionMap, const RawInstructions &input, const uint offset);
+
   InputMode mode_first;
   InputMode mode_second;
   InputMode mode_third;
-
-  ~Instruction(){};
 
   void set_input_modes(InputMode first = InputMode::UNKNOWN,
                        InputMode second = InputMode::UNKNOWN,
@@ -47,27 +50,21 @@ struct Instruction {
   };
 
   virtual Action run(RawInstructions &input, uint &offset, Ints &inqueue,
-                     Ints &outqueue) {
-    throw std::runtime_error("run() should be overridden");
-  };
-
-  static InstructionMap instructions();
-  static std::shared_ptr<Instruction>
-  read(const InstructionMap, const RawInstructions &input, const uint offset);
+                     Ints &outqueue) = 0;
 };
 
 typedef std::chrono::duration<long, std::ratio<1, 1000000000>> Duration;
 
 struct IntComputer {
   RawInstructions instructions;
-  InstructionMap available_instructions;
+  InstructionMap known_instructions;
   Ints input{};
   Ints output{};
   uint offset{};
   Duration runtime{};
 
   IntComputer(RawInstructions instructions) : instructions{instructions} {
-    available_instructions = Instruction::instructions();
+    known_instructions = Instruction::make_instruction_map();
   };
   IntComputer() : IntComputer(RawInstructions({})){};
 
