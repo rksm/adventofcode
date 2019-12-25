@@ -3,9 +3,9 @@
 SOURCE_FILES := $(wildcard *.cpp) $(wildcard *.hpp)
 CPP := clang
 # CPP := clang -lstdc++ -std=c++2a -Ofast
-FLAGS := -lstdc++ -std=c++2a -Ofast
-# FLAGS := -lstdc++ -std=c++2a -g
-UTILS := util.cpp
+# FLAGS := -lstdc++ -std=c++2a -Ofast
+FLAGS := -lstdc++ -std=c++2a -g
+UTILS := util.cpp IntComputer.cpp
 
 day_09: $(SOURCE_FILES)
 	$(CPP) $(FLAGS) $@.cpp $(UTILS) -o $@

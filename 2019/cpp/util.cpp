@@ -5,14 +5,14 @@
 
 using namespace std;
 
-void print_input(Input &input) {
+void print_input(const Input &input) {
   for (auto it : input) {
     cout << it << ",";
   }
   cout << endl;
 }
 
-Input get_input(string path) {
+Input get_input(const string path) {
   Input input;
   {
     ifstream input_file;
@@ -33,4 +33,10 @@ Input get_input(string path) {
   }
 
   return input;
+}
+
+string pad(const string input, const char padchar, const size_t wanted_size) {
+  if (input.size() >= wanted_size)
+    return move(input);
+  return move(string(wanted_size - input.size(), padchar) + input);
 }
