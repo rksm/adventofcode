@@ -5,6 +5,8 @@
 #include <tuple>
 #include <vector>
 
+namespace day_02 {
+
 using namespace std;
 
 #define DEBUG 0
@@ -125,7 +127,7 @@ Solution solve2() {
   throw runtime_error("should not get here");
 }
 
-int main(int argc, char *argv[]) {
+void run() {
   {
     auto [duration, solution] = solve1();
     cout << "result: " << solution << " in " << duration << "ns" << endl;
@@ -134,5 +136,6 @@ int main(int argc, char *argv[]) {
     auto [duration, solution] = solve2();
     cout << "result: " << solution << " in " << duration << "µs" << endl;
   }
-  return 0;
 }
+
+} // namespace day_02

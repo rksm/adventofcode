@@ -1,34 +1,29 @@
 .PHONY: run clean fresh rtags
 
-SOURCE_FILES := $(wildcard *.cpp) $(wildcard *.hpp)
+CPP_SOURCE_FILES := $(wildcard *.cpp)
+SOURCE_FILES := $(CPP_SOURCE_FILES) $(wildcard *.hpp)
+
 CPP := clang
-# CPP := clang -lstdc++ -std=c++2a -Ofast
-# FLAGS := -lstdc++ -std=c++2a -Ofast
-FLAGS := -lstdc++ -std=c++2a -g
-UTILS := util.cpp IntComputer.cpp
+FLAGS := -lstdc++ -std=c++2a -Ofast
+# FLAGS := -lstdc++ -std=c++2a -g
 
-day_09: $(SOURCE_FILES)
-	$(CPP) $(FLAGS) $@.cpp $(UTILS) -o $@
+adventofcode: $(SOURCE_FILES) Makefile
+	$(CPP) $(FLAGS) $(CPP_SOURCE_FILES) -o $@
 
-day_05: $(SOURCE_FILES)
-	$(CPP) $(FLAGS) $@.cpp $(UTILS) -o $@
+run: adventofcode
+	./adventofcode
 
-day_02: $(SOURCE_FILES)
-	$(CPP) $(FLAGS) $@.cpp $(UTILS) -o $@
+debug: adventofcode
+	gdb ./adventofcode
 
-run: day_05
-	./day_05
-
-debug: day_05
-	gdb ./day_05
-
-profile: day_05
+profile: adventofcode
 	@-rm callgrind.out*
-	valgrind --tool=callgrind ./day_05
+	valgrind --tool=callgrind ./adventofcode
 	kcachegrind ./callgrind.out.*
 
 clean:
 	@-bash -c 'find . -type f -exec file {} \; | grep executable | cut -d':' -f1 | xargs rm'
+	@-rm callgrind.out*
 
 rtags: clean
 	bear $(MAKE) run

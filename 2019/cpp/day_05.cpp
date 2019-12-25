@@ -7,20 +7,17 @@
 #include <tuple>
 #include <vector>
 
+namespace day_05 {
+
 using namespace std;
 
-long solve_day2_again(long noun, long verb, RawInstructions instructions) {
-  auto computer = IntComputer(instructions);
-  computer.instructions.ints[1] = noun;
-  computer.instructions.ints[2] = verb;
+void solve_day2_again_1() {
+  IntComputer computer{RawInstructions::from_file("input_02.txt")};
+  computer.instructions.ints[1] = 12;
+  computer.instructions.ints[2] = 2;
   computer.run();
   computer.print_runtime();
-  return computer.instructions.ints[0];
-}
-
-void solve_day2_again_1() {
-  auto result =
-      solve_day2_again(12, 2, RawInstructions::from_file("input_02.txt"));
+  auto result = computer.instructions.ints[0];
   cout << "day 2 problem 1: " << result << endl;
 }
 
@@ -47,27 +44,6 @@ end:
   computer.print_runtime();
   cout << "day 2 problem 2: " << solution << endl;
 }
-
-// void solve_day2_again_2() {
-//   auto input_proto = get_input("input_02.txt");
-
-//   auto start = chrono::high_resolution_clock::now();
-//   for (auto i = 0; i < 99; ++i) {
-//     for (auto j = 0; j < 99; ++j) {
-//       auto input = input_proto;
-//       solve_day2_again(i, j, input);
-//       if (input[0] == 19690720) {
-//         auto solution = 100 * i + j;
-//         auto stop = chrono::high_resolution_clock::now();
-//         return make_tuple(
-//             (chrono::duration_cast<chrono::microseconds>(stop -
-//             start)).count(), solution);
-//       }
-//     }
-//   }
-//   std::cerr << "solve1_again: should not get here" << std::endl;
-//   exit(1);
-// }
 
 long solve(RawInstructions instructions, long input) {
   auto computer = IntComputer(instructions);
@@ -131,7 +107,9 @@ void tests() {
   cout << "TESTS DONE" << endl;
 }
 
-int main(int argc, char *argv[]) {
+void run() {
+
+  cout << "DAY 5" << endl;
 
   tests();
 
@@ -140,6 +118,6 @@ int main(int argc, char *argv[]) {
 
   solve_1();
   solve_2();
-
-  return 0;
 }
+
+} // namespace day_05
