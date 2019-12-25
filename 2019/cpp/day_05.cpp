@@ -25,9 +25,10 @@ void solve_day2_again_2() {
   long solution{};
   auto instructions = RawInstructions::from_file("input_02.txt");
   IntComputer computer{};
-
+  long counter{};
   for (auto i = 0; i < 99; ++i) {
     for (auto j = 0; j < 99; ++j) {
+      counter++;
       computer.instructions = instructions;
       computer.instructions.ints[1] = i;
       computer.instructions.ints[2] = j;
