@@ -11,3 +11,5 @@ compile_commands.json
 *iml
 
 /2018/rust/data/*
+
+/2021/rust/data/*
