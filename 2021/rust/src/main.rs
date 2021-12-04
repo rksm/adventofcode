@@ -2,6 +2,7 @@ use anyhow::Result;
 
 mod day1;
 mod day2;
+mod day3;
 mod input;
 
 fn main() -> Result<()> {
@@ -18,6 +19,10 @@ fn main() -> Result<()> {
         Some("day2") => {
             day2::part1()?;
             day2::part2()?;
+        }
+        Some("day3") => {
+            day3::part1()?;
+            day3::part2()?;
         }
         _ => return Err(anyhow::anyhow!("unknown command")),
     }
