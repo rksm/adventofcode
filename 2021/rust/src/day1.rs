@@ -2,6 +2,19 @@ use anyhow::Result;
 
 use crate::input;
 
+pub fn test_input() -> &'static str {
+    "199
+200
+208
+210
+200
+207
+240
+269
+260
+263"
+}
+
 pub fn parse(input: &str) -> Vec<i32> {
     input
         .trim()
@@ -10,8 +23,12 @@ pub fn parse(input: &str) -> Vec<i32> {
         .collect()
 }
 
-pub fn part1() -> Result<()> {
-    let input = input::load(1)?;
+pub fn part1(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(1)?
+    };
 
     let mut increases = 0;
     let mut last_measurement = None;
@@ -29,8 +46,13 @@ pub fn part1() -> Result<()> {
     Ok(())
 }
 
-pub fn part2() -> Result<()> {
-    let input = input::load(1)?;
+pub fn part2(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(1)?
+    };
+
     let measurements = parse(&input);
     let measurments2 = measurements.iter().skip(1).collect::<Vec<_>>();
 

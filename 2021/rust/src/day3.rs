@@ -4,7 +4,7 @@ use crate::input;
 use anyhow::Result;
 use bitvec::prelude::*;
 
-fn test_input_day3_part1() -> &'static str {
+fn test_input() -> &'static str {
     "00100
 11110
 10110
@@ -43,9 +43,12 @@ impl ReportNumber {
     }
 }
 
-pub fn part1() -> Result<()> {
-    // let input = test_input_day3_part1();
-    let input = input::load(3)?;
+pub fn part1(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(3)?
+    };
 
     let mut lines = input.lines().peekable();
     let n = lines.clone().count();
@@ -75,9 +78,12 @@ pub fn part1() -> Result<()> {
     Ok(())
 }
 
-pub fn part2() -> Result<()> {
-    // let input = test_input_day3_part1();
-    let input = input::load(3)?;
+pub fn part2(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(3)?
+    };
 
     let mut numbers1 = input
         .lines()

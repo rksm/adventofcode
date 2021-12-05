@@ -68,7 +68,7 @@ impl SubmarinePosition {
     }
 }
 
-fn test_input_day2_part1() -> &'static str {
+fn test_input() -> &'static str {
     "forward 5
 down 5
 forward 8
@@ -77,9 +77,12 @@ down 8
 forward 2"
 }
 
-pub fn part1() -> Result<()> {
-    // let input = test_input_day2_part1().to_string();
-    let input = input::load(2)?;
+pub fn part1(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(2)?
+    };
 
     let commands = SubmarineCommand::parse(&input);
 
@@ -93,9 +96,12 @@ pub fn part1() -> Result<()> {
     Ok(())
 }
 
-pub fn part2() -> Result<()> {
-    // let input = test_input_day2_part1().to_string();
-    let input = input::load(2)?;
+pub fn part2(testing: bool) -> Result<()> {
+    let input = if testing {
+        test_input().to_string()
+    } else {
+        input::load(2)?
+    };
 
     let commands = SubmarineCommand::parse(&input);
 
