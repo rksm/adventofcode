@@ -26,6 +26,7 @@ dependencies = [
  "env_logger",
  "itertools",
  "log",
+ "poloto",
  "ureq",
 ]
 
@@ -207,6 +208,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
+name = "poloto"
+version = "3.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7edee463c4e0ba442fbea3403c3a285b3203ff6371c00414f25ab1665504d907"
+dependencies = [
+ "tagger",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -300,6 +310,12 @@ dependencies = [
  "quote",
  "unicode-xid",
 ]
+
+[[package]]
+name = "tagger"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ebdb5588f490ba960dea65d7a6dc05fb788e2df62fe3f4cc2f0d53ca7473e66"
 
 [[package]]
 name = "tap"

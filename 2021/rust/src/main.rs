@@ -5,6 +5,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 mod input;
 
 fn main() -> Result<()> {
@@ -34,6 +35,10 @@ fn main() -> Result<()> {
         (Some("day5"), testing) => {
             day5::part1(testing)?;
             day5::part2(testing)?;
+        }
+        (Some("day6"), testing) => {
+            day6::part1(testing)?;
+            day6::part2(testing)?;
         }
         _ => return Err(anyhow::anyhow!("unknown command")),
     }
